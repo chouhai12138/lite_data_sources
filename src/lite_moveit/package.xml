@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>lite_moveit</name>
+  <version>0.3.0</version>
+  <description>
+     An automatically generated package with all the configuration and launch files for using the lite_000_asm with the MoveIt Motion Planning Framework
+  </description>
+  <maintainer email="your.email@example.com"></maintainer>
+
+  <license>BSD-3-Clause</license>
+
+  <url type="website">http://moveit.ros.org/</url>
+  <url type="bugtracker">https://github.com/moveit/moveit2/issues</url>
+  <url type="repository">https://github.com/moveit/moveit2</url>
+
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_kinematics</exec_depend>
+  <exec_depend>moveit_planners</exec_depend>
+  <exec_depend>moveit_simple_controller_manager</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <!-- The next 2 packages are required for the gazebo simulation.
+       We don't include them by default to prevent installing gazebo and all its dependencies. -->
+  <!-- <exec_depend>joint_trajectory_controller</exec_depend> -->
+  <!-- <exec_depend>gazebo_ros_control</exec_depend> -->
+  <exec_depend>controller_manager</exec_depend>
+
+  <!--
+    ⚠️ 依赖订正（本次改造）:
+
+    ① 新增 robstride_msgs —— moveit_remote_policy_bridge 现在发
+       `robstride_msgs/MotionCommand` 给 lite_bridge。
+       旧版用 `bar_msgs/MITCommand`（参考工程 lite_ros2 的消息包），
+       本工程没有，而且这里**从来没声明过** —— 脚本一直 import 失败。
+
+    ② 新增 control_msgs —— 脚本 import
+       `control_msgs.action.FollowJointTrajectory` 作为 action 接口，
+       此前同样未声明。
+
+    ③ 新增 lite_bringup —— one_click.launch.py 现在 include 它
+       （原版 include 的 `bar_bringup_lite` 在本工作区不存在）。
+       顺带带上 lite_bridge / lite_controller：one_click 依赖桥的
+       `source_names` 白名单与 mode_manager 的 `~/set_mode` 服务。
+
+    ④ URDF 源已从参考工程的 lite_urdf 换成**本工程的 lite_description**：
+       config/lite_000_asm.urdf.xacro 现在 include
+       `$(find lite_description)/urdf/lite.urdf.xacro`。
+       参考工程的 lite_urdf 在本工作区并不存在（未构建），保留声明会让
+       demo.launch.py 的 MoveItConfigsBuilder 在 xacro 阶段直接失败。
+  -->
+  <exec_depend>robstride_msgs</exec_depend>
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>lite_bringup</exec_depend>
+  <exec_depend>lite_bridge</exec_depend>
+  <exec_depend>lite_controller</exec_depend>
+  <exec_depend>lite_description</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_ros_visualization</exec_depend>
+  <exec_depend>moveit_ros_warehouse</exec_depend>
+  <exec_depend>moveit_setup_assistant</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>rviz_common</exec_depend>
+  <exec_depend>rviz_default_plugins</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>warehouse_ros_mongo</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+
+  <export>
+      <build_type>ament_cmake</build_type>
+  </export>
+</package>

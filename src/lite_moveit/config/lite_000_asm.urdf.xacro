@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lite_000_asm">
+    <!--
+      本工程（/data/lite_motor_ws）的机器人模型只有 **lite_description**，
+      参考工程的 lite_urdf 在本工作区并不存在（原 include 会让
+      MoveItConfigsBuilder / xacro 直接报
+      "package 'lite_urdf' not found" → demo.launch.py 起不来）。
+
+      lite_description/urdf/lite.urdf.xacro 是自包含的：
+        · 定义全部 link / joint（关节名与 lite_000_asm.srdf 完全一致）
+        · 自己 include 相对的 lite.ros2_control.xacro 并调用 lite_ros2_control
+      因此这里**不再** include 本地的 lite_000_asm.ros2_control.xacro，
+      否则会出现两个 <ros2_control> 系统。
+
+      MoveIt 只把这份 URDF 用作 robot_description / 规划 / RViz；
+      真机的 ros2_control 由 lite_bringup 用它自己的 URDF 拉起。
+    -->
+    <xacro:include filename="$(find lite_description)/urdf/lite.urdf.xacro" />
+</robot>

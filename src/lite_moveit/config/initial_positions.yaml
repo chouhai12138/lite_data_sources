@@ -1,0 +1,19 @@
+# Default initial positions for lite_000_asm's ros2_control fake system
+
+initial_positions:
+  left_elbow_pitch: 0
+  left_gripper: 0
+  left_shoulder_pitch: 0
+  left_shoulder_roll: 0
+  left_shoulder_yaw: 0
+  left_wrist_pitch: 0
+  left_wrist_roll: 0
+  left_wrist_yaw: 0
+  right_elbow_pitch: 0
+  right_gripper: 0
+  right_shoulder_pitch: 0
+  right_shoulder_roll: 0
+  right_shoulder_yaw: 0
+  right_wrist_pitch: 0
+  right_wrist_roll: 0
+  right_wrist_yaw: 0

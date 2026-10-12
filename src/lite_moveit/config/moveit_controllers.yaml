@@ -1,0 +1,43 @@
+# MoveIt uses this configuration for controller management
+
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - remote_policy_controller
+
+  remote_policy_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory   # 桥接节点提供的 action 路径
+    default: true
+    # ⚠️ 这里必须列出**桥可能转发到的全部关节**。
+    #
+    #    move_group 的 trajectory_execution_manager 按"控制器声明的关节能否
+    #    覆盖轨迹里的关节"来挑控制器。漏掉夹爪时，规划 `left_grip_group` /
+    #    `right_grip_group` / `arms_grippers_group` 会在执行阶段报：
+    #
+    #      Unable to identify any set of controllers that can actuate
+    #      the specified joints: [ left_gripper ]
+    #      → Apparently trajectory initialization failed → CONTROL_FAILED
+    #
+    #    多写关节是安全的：轨迹关节只要是这份列表的**子集**就会被接受；
+    #    `mode:=arms`（无夹爪）时若真去规划夹爪，命令到桥那边也只是打
+    #    "未知关节"警告后被忽略，手臂不受影响。
+    joints:
+      - left_shoulder_pitch
+      - left_shoulder_roll
+      - left_shoulder_yaw
+      - left_elbow_pitch
+      - left_wrist_yaw
+      - left_wrist_roll
+      - left_wrist_pitch
+      - right_shoulder_pitch
+      - right_shoulder_roll
+      - right_shoulder_yaw
+      - right_elbow_pitch
+      - right_wrist_yaw
+      - right_wrist_roll
+      - right_wrist_pitch
+      # 夹爪（prismatic，单位米，0~0.047）
+      - left_gripper
+      - right_gripper
