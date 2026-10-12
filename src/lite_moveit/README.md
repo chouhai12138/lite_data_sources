@@ -566,6 +566,25 @@ MoveIt 与 `lite_bridge` 之间的核心桥接节点。
 
 实时电机状态监控仪表盘，用于调试和健康检查。
 
+> ⚠️ **本脚本已被 `lite_bridge` 里的新版取代**，新需求优先用：
+>
+> ```bash
+> ros2 run lite_bridge motor_monitor            # 实时
+> ros2 run lite_bridge motor_monitor --once     # 单次快照（排查时最有用）
+> ```
+>
+> 新版多出三件本脚本做不到的事：
+>
+> | | 本脚本 | `lite_bridge/motor_monitor` |
+> |---|---|---|
+> | 位置 | 只有实际值 | **目标 / 实际 / 误差** 三列 |
+> | 力矩 | 固定阈值（2/5 N·m）变色 | 按**每关节额定值**折算**占额 %**，≥90% 判为**饱和** |
+> | 限位/额定 | 硬编码在脚本里 | 从 `robot_description` **自动读取** |
+> | 夹爪 | ~~按弧度显示~~（已修） | 按 **mm** |
+>
+> **诊断"某个关节顶不住 / 推得动 / 发热"就靠"占额"那一列** ——
+> 详见 `lite_core_controller` 的 `lite_driver/README.md`「CSP 力矩保护值配置表」。
+
 ---
 
 ## 依赖
@@ -623,8 +642,9 @@ ros2 control list_controllers
 # 确认补全后的关节状态里 14/16 个关节都在（MoveIt 用的就是这个话题）
 ros2 topic echo /lite_js/joint_states --once
 
-# 电机监控 / 日志
-ros2 run lite_moveit motor_monitor
+# 电机监控 / 日志（推荐用 lite_bridge 的新版：带目标对比与力矩占额）
+ros2 run lite_bridge motor_monitor
+ros2 run lite_bridge motor_monitor --once     # 单次快照
 ros2 run rqt_console rqt_console
 ```
 
@@ -637,5 +657,6 @@ ros2 run rqt_console rqt_console
 | `请先调用 set_control_mode` / 命令被拒                    | 消息 `mode` 与桥的协议模式不一致                              |
 | 切换被拒、提示先切 HOLD                                   | `ZERO_TORQUE → TRACKING` 被迁移守则拦下（`force: true` 可绕过）|
 | 命令被整帧拒绝、日志列出"缺失：xxx"                     | `mode` 两边不一致（本节点少发）→ 桥的 I5 完整性校验拒帧       |
+| **某关节在某些姿态顶不住、用手推得动、还发热**            | **该关节撞到 CSP 力矩上限（`limit_cur`）**。用 `ros2 run lite_bridge motor_monitor` 看**占额**：≥90% 即饱和。抬高该关节的 `max_safe_torque`（`lite_description/urdf/lite.ros2_control.xacro`），峰值以内合法。详见 `lite_core_controller` 的 `lite_driver/README.md`「CSP 力矩保护值配置表」 |
 | 切到 TRACKING 后机械臂立刻软下来                           | 正常现象，见"软塌窗口"；发第一条轨迹或回 HOLD                  |
 | `set_mode` 等不到服务                                     | `controller:=modes` 且 `start_mode_manager:=true`？控制器加载了吗 |

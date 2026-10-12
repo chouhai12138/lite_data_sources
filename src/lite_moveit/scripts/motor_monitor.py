@@ -5,9 +5,24 @@ Motor Monitor - console dashboard for real-time joint states.
 Shows position, velocity, and torque (effort) for all 16 joints
 in a live-updating terminal table.
 
-Usage:
+⚠️ 本脚本已被 **`lite_bridge` 里的新版取代**，新需求优先用那个：
+
+    ros2 run lite_bridge motor_monitor            # 实时
+    ros2 run lite_bridge motor_monitor --once     # 单次快照
+
+新版多出三件本脚本做不到的事：
+  · **目标 vs 实际 vs 误差** 三列（本脚本只看得到实际值）
+  · 力矩按**每关节额定值**折算**占额 %**，≥90% 判为**饱和**
+    —— 诊断"某关节顶不住 / 推得动 / 发热"就靠这一列
+  · 关节限位与额定力矩从 `robot_description` **自动读取**，不会漂移
+
+用法:
   ros2 run lite_moveit motor_monitor
   ros2 run lite_moveit motor_monitor --ros-args -p rate:=10.0
+
+  # 若话题不是默认的 /joint_states（本驱动器实际发布的就是它）：
+  ros2 run lite_moveit motor_monitor --ros-args \
+      -p joint_state_topic:=/lite_js/joint_states
 """
 
 import os
@@ -96,7 +111,11 @@ class MotorMonitor(Node):
         super().__init__('motor_monitor')
 
         self.declare_parameter('rate', 10.0)
-        self.declare_parameter('joint_state_topic', '/lite/joint_states')
+        # ⚠️ 本工程 `joint_state_broadcaster` 发布的是 **/joint_states**。
+        #    旧默认值 `/lite/joint_states` 在本工作区**不存在** —— 订阅它的话
+        #    界面会一直停在 "Waiting for ..."，看起来像驱动没起。
+        #    （MoveIt 用的是补全版 `/lite_js/joint_states`，见 README。）
+        self.declare_parameter('joint_state_topic', '/joint_states')
 
         self._rate = self.get_parameter('rate').value
         self._lock = threading.Lock()
@@ -163,7 +182,8 @@ class MotorMonitor(Node):
     def _render(self):
         names, pos, vel, eff = self.get_state()
         if not names:
-            sys.stdout.write(CLEAR + 'Waiting for /lite/joint_states ...\n')
+            topic = self.get_parameter('joint_state_topic').value
+            sys.stdout.write(CLEAR + f'Waiting for {topic} ...\n')
             sys.stdout.flush()
             return
 
@@ -220,17 +240,19 @@ class MotorMonitor(Node):
         for jk in arm_order:
             out.append(format_row('right_', jk, right))
 
-        out.append(f'\n{BOLD}  GRIPPERS{RESET}\n')
+        out.append(f'\n{BOLD}  GRIPPERS (mm){RESET}\n')
         for name in sorted(grippers.keys()):
             p, v, e = grippers[name]
             lo, hi = JOINT_LIMITS.get(name, (0.0, 0.047))
             bar = _progress_bar(p, lo, hi)
-            out.append(f'  {name:22s} {p*57.3:8.1f} {bar:30s} {v:8.3f} {color_torque(e)}\n')
+            # ⚠️ 夹爪是 `gripper_opening` 类型：关节值是**米**（行程 0~0.047 m），
+            #    不是弧度。原来按 `p*57.3` 显示是错的（0.047 会显示成 2.7）。
+            out.append(f'  {name:22s} {p*1000:8.1f} {bar:30s} {v:8.3f} {color_torque(e)}\n')
             # Also show passive joints
             passive_name = name.replace('gripper', 'gripper_passive_joint')
             if passive_name in grippers:
                 pp, pv, pe = grippers[passive_name]
-                out.append(f'  {passive_name:22s} {pp*57.3:8.1f} {"":30s} {pv:8.3f} {color_torque(pe)}\n')
+                out.append(f'  {passive_name:22s} {pp*1000:8.1f} {"":30s} {pv:8.3f} {color_torque(pe)}\n')
 
         total_torque = sum(abs(e) for e in eff)
         max_t_idx = max(range(len(eff)), key=lambda i: abs(eff[i])) if eff else 0
